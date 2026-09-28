@@ -1,0 +1,118 @@
+Vou começar olhando o que tem dentro do arquivo que você enviou.O PDF parece ser imagem (sem texto). Vou converter as páginas em imagens para ler.As páginas estão giradas. Vou endireitar e ver com mais nitidez.Estou lendo as páginas do PDF (já vi 5 de 8) para entender o sistema antes de montar o roteiro; falta ver as últimas três.Já li as 8 páginas. Agora vou conferir as regras fiscais de depreciação no Brasil para o resumo do tema.Li as 8 páginas do PDF e pesquisei as regras fiscais. Abaixo estão o que entendi do seu sistema, o resumo do tema e o roteiro.
+
+## 1. O que seu sistema faz (segundo o PDF)
+
+É um **controle patrimonial (ativo imobilizado) com depreciação automática**. Os módulos que aparecem nas telas são:
+
+| Módulo | O que faz |
+|---|---|
+| Cadastro de Empresa | Código, CNPJ e razão social |
+| Cadastro de Local | Filiais, com endereço e contas contábeis |
+| Cadastro de Espécie | Veículos, Imóveis, Equipamentos etc., com o % de depreciação padrão |
+| Cadastro de Bem | Descrição, placa patrimonial, espécie, local, nota fiscal, valor, data de início da depreciação e situação |
+| Movimentação | Cadastrar (entrada), Movimentar (depreciação mensal), Transferir (troca de local e de placa) e Baixar (venda, por exemplo) |
+| Consulta do Bem | Extrato com todos os lançamentos e o saldo após cada um |
+| Relatório de Inventário | Lista por empresa, local e espécie, com campo "Localizado" para conferência física |
+| Etiqueta de Patrimônio | Plaqueta com o nome da empresa e o código do bem |
+
+O coração do projeto é o **extrato de movimentos** (páginas 5 e 6). Cada bem tem uma sequência de lançamentos (Entrada, Movimento, Baixa Transferência, Entrada Transferência e Baixa), e o saldo é recalculado a cada um. Modele isso como uma tabela de lançamentos, sem sobrescrever o saldo do bem.
+
+**Pontos para confirmar com seu orientador:**
+- No exemplo, 1,66% de R$ 100.000 dá R$ 1.660, mas o valor exato de 20% ÷ 12 é R$ 1.666,67, como mostra o próprio PDF na página 3. Guarde a taxa com mais casas decimais ou calcule a partir da vida útil.
+- Os campos "Conta Crédito" e "Conta Débito" aparecem com "01.01.2001". Parece preenchimento de exemplo, e provavelmente deveriam ser códigos do plano de contas.
+- O exemplo usa a Fiorino de entrega com 20%. Segundo as fontes, veículos de carga usam 25% (veja o resumo abaixo). Deixe a taxa **editável por espécie** para não travar nessa dúvida.
+
+## 2. Pesquisa rápida: depreciação
+
+**Conceito:** é a perda de valor de um bem por uso, desgaste natural ou obsolescência. Em vez de lançar o custo inteiro no dia da compra, a empresa o distribui ao longo da vida útil.
+
+**Fiscal x contábil:** a depreciação fiscal segue taxas fixas da Receita Federal para apurar impostos. A contábil pode variar conforme a vida útil estimada de cada ativo, seguindo o CPC 27. A base fiscal é a IN RFB nº 1.700/2017, que define as quotas com base no Anexo III. A taxa é 100% dividido pela vida útil, então 5 anos dão 20% ao ano, ou 1,666...% ao mês.
+
+**Taxas principais** (edificações 4%, máquinas e equipamentos 10%, móveis e utensílios 10%, veículos de passeio 20%, veículos de carga 25%, computadores e periféricos 20%):
+
+| Espécie | Taxa anual | Vida útil |
+|---|---|---|
+| Edificações | 4% | 25 anos |
+| Máquinas e equipamentos | 10% | 10 anos |
+| Móveis e utensílios | 10% | 10 anos |
+| Veículos de passeio | 20% | 5 anos |
+| Veículos de carga | 25% | 4 anos |
+| Computadores e periféricos | 20% | 5 anos |
+
+Algumas fontes divergem em pontos como móveis, que um site traz com 20%. Confira sempre o Anexo III da IN 1.700 antes de fixar os valores no sistema.
+
+**Conceitos úteis para o TCC:**
+- **Valor residual:** quanto o bem vale no fim da vida útil. No seu PDF ele é zero.
+- **Método linear:** cota fixa por período, que é o que o seu sistema usa.
+- **Outros métodos** (saldo decrescente, soma dos dígitos, unidades produzidas): cite no TCC como trabalho futuro.
+- **Turnos:** para máquinas, a Receita permite coeficientes de 1,0, 1,5 e 2,0 conforme as horas diárias de operação. Deixe isso como melhoria futura.
+- **Terrenos** não depreciam, e **imobilizado em andamento** só começa a depreciar quando entra em operação.
+- **Custo x despesa:** o que é usado direto na produção entra como custo; o restante entra como despesa.
+
+Sua ideia de "vida útil de 5 anos, 20% ao ano" bate com a regra fiscal de veículos de passeio.
+
+## 3. Arquitetura recomendada
+
+Você citou muitas tecnologias. Encaixam assim:
+
+- **MySQL**: banco de dados.
+- **Python (FastAPI ou Flask)**: API e motor de cálculo da depreciação.
+- **Angular + TypeScript**: o Angular já é escrito em TypeScript, então ele não é opcional, vem junto. HTML, CSS e JS são a base dele.
+- **Desktop**: deixe por último e opcional. O caminho mais barato é empacotar o mesmo Angular com **Electron**.
+
+Fluxo: `Angular → API Python → MySQL`.
+
+## 4. Roteiro passo a passo
+
+**Fase 0: Entender e delimitar (3 a 5 dias)**
+1. Leia o resumo acima e refaça à mão o exemplo do PDF (R$ 100.000, três meses de depreciação, transferência e baixa).
+2. Escreva o **MVP**: cadastros, cálculo mensal, extrato do bem e relatório de inventário.
+3. Anote em uma lista o que fica para depois (etiqueta com código de barras, outros métodos, desktop).
+
+**Fase 1: Banco de dados (1 semana)**
+1. Desenhe o modelo entidade-relacionamento (use o MySQL Workbench ou o dbdiagram.io).
+2. Tabelas: `empresa`, `local`, `especie`, `bem` e `movimento_bem` (o extrato). Adicione `usuario` depois.
+3. Use `DECIMAL(15,2)` para dinheiro (nunca `FLOAT`), chaves estrangeiras e uma chave composta ou única em (`empresa`, `codigo_bem`, `sequencia`).
+4. Insira o exemplo do PDF como dados de teste.
+
+**Fase 2: Backend Python (2 a 3 semanas)**
+1. Crie a estrutura do projeto e a conexão com o MySQL.
+2. Faça o CRUD de Empresa, depois Local, Espécie e Bem, testando cada um no Swagger (a documentação automática do FastAPI).
+3. Implemente as operações **Cadastrar (entrada)**, **Depreciar**, **Transferir** e **Baixar**, cada uma gerando lançamentos.
+4. Escreva **testes automatizados** para o cálculo, usando o exemplo do PDF como caso de teste.
+
+O núcleo do cálculo pode ser assim:
+```python
+from decimal import Decimal, ROUND_HALF_UP
+
+def cota_mensal(valor_original, taxa_anual_pct):
+    cota = valor_original * (taxa_anual_pct / Decimal(12)) / Decimal(100)
+    return cota.quantize(Decimal("0.01"), ROUND_HALF_UP)
+
+# Na última parcela, limitar a cota ao saldo restante (para não ficar negativo)
+cota = min(cota_mensal(...), saldo_atual - valor_residual)
+```
+
+**Fase 3: Frontend Angular (3 semanas)**
+1. Instale o Node e o Angular CLI, crie o projeto e monte o layout base (menu e rotas).
+2. Faça **uma tela completa de ponta a ponta** (Empresa: listar, inserir, alterar, excluir) e só depois repita o padrão nas outras.
+3. Depois faça as telas de Bem, Movimentação e Consulta (extrato).
+
+**Fase 4: Relatórios (1 semana)**
+1. Relatório de inventário em PDF (a lib `reportlab` ou `weasyprint` serve).
+2. Etiqueta com placa patrimonial, podendo evoluir para código de barras.
+
+**Fase 5: Desktop (opcional, 3 a 5 dias)**
+- Empacote com Electron. Só comece se as fases 1 a 4 estiverem prontas.
+
+**Fase 6: Fechamento**
+- Tela de login, validações, testes com dados reais, manual de uso e escrita do TCC (documente cada fase à medida que fizer).
+
+## 5. Como não se perder
+
+- Trabalhe em **fatias verticais**: uma funcionalidade inteira (banco, API e tela) por vez, sem construir toda a API antes de ver uma tela.
+- Use **Git** desde o primeiro dia.
+- Mantenha um quadro simples (Trello ou Notion) com o que está a fazer, fazendo e feito.
+- Comece **esta semana** pela Fase 0 e pela modelagem do banco.
+
+Se quiser, o próximo passo pode ser eu montar o **script SQL completo** do banco com o exemplo do PDF, ou a **estrutura de pastas do projeto** (Python e Angular). Qual dos dois prefere que eu faça primeiro?
